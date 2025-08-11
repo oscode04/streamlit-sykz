@@ -1,119 +1,96 @@
-# dashboard.py
+# dashboard_inferensi.py
 import streamlit as st
 import pandas as pd
 import numpy as np
-from datetime import datetime
-from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error, mean_absolute_percentage_error
+import pickle
 import xgboost as xgb
-import joblib
-import json
-import os
+from datetime import datetime
 
-# =========================
-# 1. Load Model & Data
-# =========================
-MODEL_PATH = "xgboost_model.json"   # model hasil save_model()
-SCALER_PATH = "scaler.pkl"          # scaler (jika ada)
-FEATURES_PATH = "features.pkl"      # daftar fitur (jika ada)
-FEATURES_JSON = "feature_names.json" # alternatif JSON
+# ==============================
+# 1. Load model dan scaler
+# ==============================
+MODEL_PATH = "final_xgb_model.pkl"
+SCALER_PATH = "scaler.pkl"  # opsional, kalau data perlu scaling
 
-st.set_page_config(page_title="Dashboard Prediksi Inflasi", layout="wide")
+with open(MODEL_PATH, "rb") as f:
+    model = pickle.load(f)
 
-@st.cache_resource
-def load_model():
-    model = xgb.Booster()
-    model.load_model(MODEL_PATH)
-    return model
+try:
+    with open(SCALER_PATH, "rb") as f:
+        scaler = pickle.load(f)
+except FileNotFoundError:
+    scaler = None
 
-@st.cache_resource
-def load_scaler():
-    if os.path.exists(SCALER_PATH):
-        return joblib.load(SCALER_PATH)
-    return None
+# ==============================
+# 2. Konfigurasi Halaman
+# ==============================
+st.set_page_config(page_title="Prediksi Inflasi Bulanan", page_icon="📈", layout="wide")
+st.title("📈 Dashboard Prediksi Inflasi Bulanan - XGBoost")
 
-@st.cache_resource
-def load_features():
-    if os.path.exists(FEATURES_PATH):
-        return joblib.load(FEATURES_PATH)
-    elif os.path.exists(FEATURES_JSON):
-        with open(FEATURES_JSON, "r") as f:
-            return json.load(f)
-    return None
+st.markdown("Masukkan nilai variabel makroekonomi untuk memprediksi inflasi bulan berikutnya.")
 
-model = load_model()
-scaler = load_scaler()
-features = load_features()
+# ==============================
+# 3. Input Parameter
+# ==============================
+with st.sidebar:
+    st.header("Input Parameter")
+    tahun = st.number_input("Tahun", min_value=2000, max_value=2100, value=datetime.now().year)
+    bulan = st.selectbox("Bulan", 
+                         ["Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                          "Juli", "Agustus", "September", "Oktober", "November", "Desember"], 
+                         index=6)  # default Juli
+    
+    BI_Rate = st.number_input("BI Rate (%)", value=6.0, step=0.01)
+    BBM = st.number_input("Harga BBM (Rp/L)", value=10000, step=50)
+    Kurs_USD_IDR = st.number_input("Kurs USD/IDR", value=15000, step=10)
+    Harga_Beras = st.number_input("Harga Beras (Rp/kg)", value=12000, step=50)
+    Inflasi_Inti = st.number_input("Inflasi Inti (%)", value=2.5, step=0.01)
 
-# =========================
-# 2. Input User
-# =========================
-st.title("📈 Prediksi Inflasi Bulanan Indonesia")
-st.write("Masukkan variabel-variabel ekonomi untuk memprediksi inflasi.")
+# ==============================
+# 4. Preprocessing
+# ==============================
+# Encode bulan ke bentuk sin & cos (seasonality)
+bulan_num = ["Januari", "Februari", "Maret", "April", "Mei", "Juni",
+             "Juli", "Agustus", "September", "Oktober", "November", "Desember"].index(bulan) + 1
+bulan_sin = np.sin(2 * np.pi * bulan_num / 12)
+bulan_cos = np.cos(2 * np.pi * bulan_num / 12)
 
-bulan_label = [
-    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-]
-
-tahun_input = st.number_input("Tahun Prediksi", min_value=2000, max_value=2100, value=datetime.now().year)
-bulan_input = st.selectbox("Bulan Prediksi", bulan_label, index=6)  # default Juli
-
-# Input variabel (HARUS sesuai urutan saat training)
-BI_Rate = st.number_input("BI Rate (%)", value=6.0, step=0.1)
-BBM = st.number_input("Harga BBM (Rp/liter)", value=10000, step=100)
-Kurs_USD_IDR = st.number_input("Kurs USD/IDR", value=15000, step=10)
-Harga_Beras = st.number_input("Harga Beras (Rp/kg)", value=12000, step=100)
-Inflasi_Inti = st.number_input("Inflasi Inti (%)", value=3.0, step=0.1)
-Inflasi_Total = st.number_input("Inflasi Total (%)", value=4.0, step=0.1)
-
-# Data input
-input_data = pd.DataFrame([[BI_Rate, BBM, Kurs_USD_IDR, Harga_Beras, Inflasi_Inti, Inflasi_Total]],
-                          columns=['BI_Rate', 'BBM', 'Kurs_USD_IDR', 'Harga_Beras', 'Inflasi_Inti', 'Inflasi_Total'])
-
-# Pastikan urutan fitur sama
-if features:
-    input_data = input_data[features]
+# Buat DataFrame input
+input_data = pd.DataFrame([{
+    "Tahun": tahun,
+    "BI_Rate": BI_Rate,
+    "BBM": BBM,
+    "Kurs_USD_IDR": Kurs_USD_IDR,
+    "Harga_Beras": Harga_Beras,
+    "Inflasi_Inti": Inflasi_Inti,
+    "bulan_sin": bulan_sin,
+    "bulan_cos": bulan_cos
+}])
 
 # Scaling jika ada
 if scaler:
-    input_data = pd.DataFrame(scaler.transform(input_data), columns=input_data.columns)
+    input_scaled = scaler.transform(input_data)
+else:
+    input_scaled = input_data
 
-# =========================
-# 3. Prediksi
-# =========================
-if st.button("🔮 Prediksi Inflasi"):
-    dmatrix_input = xgb.DMatrix(input_data, feature_names=input_data.columns.tolist())
-    y_pred = model.predict(dmatrix_input)[0]
-    st.success(f"Prediksi Inflasi Bulan {bulan_input} {tahun_input}: **{y_pred:.2f}%**")
+# ==============================
+# 5. Prediksi
+# ==============================
+if st.sidebar.button("Prediksi Inflasi"):
+    prediksi = model.predict(input_scaled)[0]
+    
+    st.subheader("📊 Hasil Prediksi")
+    st.metric(label="Prediksi Inflasi Bulanan (%)", value=f"{prediksi:.2f}")
 
-# =========================
-# 4. Evaluasi Model
-# =========================
-st.subheader("📊 Evaluasi Model (Data Uji)")
+    # Opsional: tampilkan tabel input
+    with st.expander("Lihat Data Input"):
+        st.dataframe(input_data)
 
-uploaded_file = st.file_uploader("Upload Dataset Uji (CSV)", type="csv")
-if uploaded_file:
-    df_test = pd.read_csv(uploaded_file)
-
-    if features:
-        X_test = df_test[features]
+    # Opsional: keterangan prediksi
+    if prediksi > 5:
+        st.warning("⚠️ Inflasi cukup tinggi, waspada kenaikan harga barang.")
+    elif prediksi > 3:
+        st.info("ℹ️ Inflasi dalam batas wajar namun perlu diwaspadai.")
     else:
-        X_test = df_test.drop(columns=["target"], errors="ignore")
+        st.success("✅ Inflasi rendah dan terkendali.")
 
-    y_test = df_test["target"]
-
-    if scaler:
-        X_test = pd.DataFrame(scaler.transform(X_test), columns=X_test.columns)
-
-    dtest = xgb.DMatrix(X_test, feature_names=X_test.columns.tolist())
-    y_pred_test = model.predict(dtest)
-
-    mae = mean_absolute_error(y_test, y_pred_test)
-    rmse = np.sqrt(mean_squared_error(y_test, y_pred_test))
-    r2 = r2_score(y_test, y_pred_test)
-    mape = mean_absolute_percentage_error(y_test, y_pred_test) * 100
-
-    st.write(f"**MAE:** {mae:.4f}")
-    st.write(f"**RMSE:** {rmse:.4f}")
-    st.write(f"**R²:** {r2:.4f}")
-    st.write(f"**MAPE:** {mape:.2f}%")
