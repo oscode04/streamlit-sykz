@@ -9,7 +9,7 @@ from datetime import datetime
 # ==============================
 # 1. Load model dan scaler
 # ==============================
-MODEL_PATH = "final_xgb_model.pkl"
+MODEL_PATH = "model_inflasi_percobaan.pkl"
 SCALER_PATH = "scaler.pkl"  # opsional, kalau data perlu scaling
 
 with open(MODEL_PATH, "rb") as f:
