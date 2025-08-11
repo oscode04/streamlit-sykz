@@ -9,7 +9,7 @@ import xgboost as xgb
 # =========================
 # 1. Load Model & Data
 # =========================
-MODEL_PATH = "model_inflasi.json"  # path ke file json
+MODEL_PATH = "xgboost_model.json"  # path ke file json
 SCALER_PATH = "scaler.pkl"         # kalau ada scaler
 FEATURES_PATH = "features.pkl"     # kalau ada daftar fitur
 
