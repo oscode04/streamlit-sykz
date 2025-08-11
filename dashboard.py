@@ -3,7 +3,7 @@ import pandas as pd
 import joblib
 from datetime import datetime
 # Load model
-model = joblib.load("model_inflasi_percobaan.pkl")
+model = joblib.load("model_inflasi.pkl")
 
 # ===== Header App =====
 st.title("📈 Prediksi Inflasi - Dashboard Forecasting")
