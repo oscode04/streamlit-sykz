@@ -1,59 +1,112 @@
+# dashboard.py
 import streamlit as st
 import pandas as pd
+import numpy as np
 import joblib
 from datetime import datetime
-# Load model
-model = joblib.load("model_inflasi.pkl")
+from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error, mean_absolute_percentage_error
+import xgboost as xgb
 
-# ===== Header App =====
-st.title("📈 Prediksi Inflasi - Dashboard Forecasting")
+# =========================
+# 1. Load Model & Data
+# =========================
+MODEL_PATH = "model_xgboost.pkl"  # path ke file pkl
+SCALER_PATH = "scaler.pkl"        # kalau ada scaler
+FEATURES_PATH = "features.pkl"    # kalau ada daftar fitur
 
-st.markdown("""
-Masukkan data ekonomi **bulan sebelumnya** untuk memprediksi **inflasi bulan berikutnya**.
-""")
+st.set_page_config(page_title="Dashboard Prediksi Inflasi", layout="wide")
 
-# ===== Dropdown untuk memilih bulan dan tahun =====
-st.subheader("📆 Pilih Bulan & Tahun Prediksi")
+# Load model dari file pkl
+@st.cache_resource
+def load_model():
+    model = joblib.load(MODEL_PATH)
+    return model
 
-# List nama bulan
-bulan_dict = {
-    "Januari": 1, "Februari": 2, "Maret": 3, "April": 4,
-    "Mei": 5, "Juni": 6, "Juli": 7, "Agustus": 8,
-    "September": 9, "Oktober": 10, "November": 11, "Desember": 12
-}
+# Load scaler kalau ada
+@st.cache_resource
+def load_scaler():
+    try:
+        return joblib.load(SCALER_PATH)
+    except:
+        return None
 
-bulan_label = list(bulan_dict.keys())
+# Load daftar fitur kalau ada
+@st.cache_resource
+def load_features():
+    try:
+        return joblib.load(FEATURES_PATH)
+    except:
+        return None
 
-bulan_input = st.selectbox("Bulan Prediksi", bulan_label, index=7)
-tahun_input = st.selectbox("Tahun Prediksi", list(range(2015, 2031)), index=2025-2015)
+model = load_model()
+scaler = load_scaler()
+features = load_features()
 
-st.markdown(f"📝 Masukkan data ekonomi untuk **bulan sebelumnya** dari {bulan_input} {tahun_input}")
-# ===== Form Input =====
-with st.form("input_form"):
-    st.subheader("📊 Input Data Ekonomi (Bulan Sebelumnya)")
+# =========================
+# 2. Input User
+# =========================
+st.title("📈 Prediksi Inflasi Bulanan Indonesia")
+st.write("Masukkan variabel-variabel ekonomi untuk memprediksi inflasi.")
 
-    bi_rate = st.number_input("BI Rate (bulan sebelumnya)", value=5.25, format="%.2f")
-    bbm = st.number_input("Harga BBM (bulan sebelumnya)", value=10000.0, format="%.2f")
+bulan_label = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+]
 
-    kurs = st.number_input("Kurs USD/IDR (bulan sebelumnya)", value=16286.0, format="%.2f")
-    beras = st.number_input("Harga Beras/kg (bulan sebelumnya)", value=14202.0, format="%.2f")
-    inflasi_inti = st.number_input("Inflasi Inti (bulan sebelumnya)", value=0.13, format="%.2f")
-    inflasi_total = st.number_input("Inflasi Total (bulan sebelumnya)", value=2.37, format="%.2f")
+tahun_input = st.number_input("Tahun Prediksi", min_value=2000, max_value=2100, value=datetime.now().year)
+bulan_input = st.selectbox("Bulan Prediksi", bulan_label, index=6)  # default Juli
 
-    submitted = st.form_submit_button("🎯 Prediksi")
+# Input variabel (contoh variabel makro)
+BI_Rate = st.number_input("BI Rate (%)", value=6.0, step=0.1)
+BBM = st.number_input("Harga BBM (Rp/liter)", value=10000, step=100)
+Kurs_USD_IDR = st.number_input("Kurs USD/IDR", value=15000, step=10)
+Harga_Beras = st.number_input("Harga Beras (Rp/kg)", value=12000, step=100)
+Inflasi_Inti = st.number_input("Inflasi Inti (%)", value=3.0, step=0.1)
+Inflasi_Total = st.number_input("Inflasi Total (%)", value=4.0, step=0.1)
 
-# ===== Prediksi =====
-if submitted:
-    # Buat DataFrame input
-    input_data = pd.DataFrame([{
-        'BI_Rate_lag1': bi_rate,
-        'BBM_lag1': bbm,
-        'Kurs_USD_IDR_lag1': kurs,
-        'Harga_Beras_lag1': beras,
-        'Inflasi_Inti_lag1': inflasi_inti,
-        'Inflasi_Total_lag1': inflasi_total
-    }])
-    # Prediksi
-    prediction = model.predict(input_data)[0]
+# Gabungkan input jadi DataFrame
+input_data = pd.DataFrame([[
+    BI_Rate, BBM, Kurs_USD_IDR, Harga_Beras, Inflasi_Inti, Inflasi_Total
+]], columns=['BI_Rate', 'BBM', 'Kurs_USD_IDR', 'Harga_Beras', 'Inflasi_Inti', 'Inflasi_Total'])
 
-    st.success(f"📌 Prediksi Inflasi Total untuk **{bulan_input} {tahun_input}** adalah: **{prediction:.2f}%**")
+# Scaling jika scaler tersedia
+if scaler:
+    input_data = pd.DataFrame(scaler.transform(input_data), columns=input_data.columns)
+
+# =========================
+# 3. Prediksi
+# =========================
+if st.button("🔮 Prediksi Inflasi"):
+    y_pred = model.predict(input_data)[0]
+    st.success(f"Prediksi Inflasi Bulan {bulan_input} {tahun_input}: **{y_pred:.2f}%**")
+
+# =========================
+# 4. Evaluasi Model
+# =========================
+st.subheader("📊 Evaluasi Model (Data Uji)")
+
+uploaded_file = st.file_uploader("Upload Dataset Uji (CSV)", type="csv")
+if uploaded_file:
+    df_test = pd.read_csv(uploaded_file)
+
+    if features:
+        X_test = df_test[features]
+    else:
+        X_test = df_test.drop(columns=["target"], errors="ignore")
+
+    y_test = df_test["target"]
+
+    if scaler:
+        X_test = pd.DataFrame(scaler.transform(X_test), columns=X_test.columns)
+
+    y_pred_test = model.predict(X_test)
+
+    mae = mean_absolute_error(y_test, y_pred_test)
+    rmse = np.sqrt(mean_squared_error(y_test, y_pred_test))
+    r2 = r2_score(y_test, y_pred_test)
+    mape = mean_absolute_percentage_error(y_test, y_pred_test) * 100
+
+    st.write(f"**MAE:** {mae:.4f}")
+    st.write(f"**RMSE:** {rmse:.4f}")
+    st.write(f"**R²:** {r2:.4f}")
+    st.write(f"**MAPE:** {mape:.2f}%")
