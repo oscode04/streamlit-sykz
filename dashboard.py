@@ -2,7 +2,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import joblib
 from datetime import datetime
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error, mean_absolute_percentage_error
 import xgboost as xgb
@@ -10,30 +9,30 @@ import xgboost as xgb
 # =========================
 # 1. Load Model & Data
 # =========================
-MODEL_PATH = "model_inflasi.pkl"  # path ke file pkl
-SCALER_PATH = "scaler.pkl"        # kalau ada scaler
-FEATURES_PATH = "features.pkl"    # kalau ada daftar fitur
+MODEL_PATH = "model_inflasi.json"  # path ke file json
+SCALER_PATH = "scaler.pkl"         # kalau ada scaler
+FEATURES_PATH = "features.pkl"     # kalau ada daftar fitur
 
 st.set_page_config(page_title="Dashboard Prediksi Inflasi", layout="wide")
 
-# Load model dari file pkl
 @st.cache_resource
 def load_model():
-    model = joblib.load(MODEL_PATH)
+    model = xgb.Booster()
+    model.load_model(MODEL_PATH)
     return model
 
-# Load scaler kalau ada
 @st.cache_resource
 def load_scaler():
     try:
+        import joblib
         return joblib.load(SCALER_PATH)
     except:
         return None
 
-# Load daftar fitur kalau ada
 @st.cache_resource
 def load_features():
     try:
+        import joblib
         return joblib.load(FEATURES_PATH)
     except:
         return None
@@ -56,7 +55,7 @@ bulan_label = [
 tahun_input = st.number_input("Tahun Prediksi", min_value=2000, max_value=2100, value=datetime.now().year)
 bulan_input = st.selectbox("Bulan Prediksi", bulan_label, index=6)  # default Juli
 
-# Input variabel (contoh variabel makro)
+# Input variabel
 BI_Rate = st.number_input("BI Rate (%)", value=6.0, step=0.1)
 BBM = st.number_input("Harga BBM (Rp/liter)", value=10000, step=100)
 Kurs_USD_IDR = st.number_input("Kurs USD/IDR", value=15000, step=10)
@@ -64,12 +63,10 @@ Harga_Beras = st.number_input("Harga Beras (Rp/kg)", value=12000, step=100)
 Inflasi_Inti = st.number_input("Inflasi Inti (%)", value=3.0, step=0.1)
 Inflasi_Total = st.number_input("Inflasi Total (%)", value=4.0, step=0.1)
 
-# Gabungkan input jadi DataFrame
-input_data = pd.DataFrame([[
-    BI_Rate, BBM, Kurs_USD_IDR, Harga_Beras, Inflasi_Inti, Inflasi_Total
-]], columns=['BI_Rate', 'BBM', 'Kurs_USD_IDR', 'Harga_Beras', 'Inflasi_Inti', 'Inflasi_Total'])
+# DataFrame input
+input_data = pd.DataFrame([[BI_Rate, BBM, Kurs_USD_IDR, Harga_Beras, Inflasi_Inti, Inflasi_Total]],
+                          columns=['BI_Rate', 'BBM', 'Kurs_USD_IDR', 'Harga_Beras', 'Inflasi_Inti', 'Inflasi_Total'])
 
-# Scaling jika scaler tersedia
 if scaler:
     input_data = pd.DataFrame(scaler.transform(input_data), columns=input_data.columns)
 
@@ -77,7 +74,8 @@ if scaler:
 # 3. Prediksi
 # =========================
 if st.button("🔮 Prediksi Inflasi"):
-    y_pred = model.predict(input_data)[0]
+    dmatrix_input = xgb.DMatrix(input_data, feature_names=list(input_data.columns))
+    y_pred = model.predict(dmatrix_input)[0]
     st.success(f"Prediksi Inflasi Bulan {bulan_input} {tahun_input}: **{y_pred:.2f}%**")
 
 # =========================
@@ -99,7 +97,8 @@ if uploaded_file:
     if scaler:
         X_test = pd.DataFrame(scaler.transform(X_test), columns=X_test.columns)
 
-    y_pred_test = model.predict(X_test)
+    dtest = xgb.DMatrix(X_test, feature_names=list(X_test.columns))
+    y_pred_test = model.predict(dtest)
 
     mae = mean_absolute_error(y_test, y_pred_test)
     rmse = np.sqrt(mean_squared_error(y_test, y_pred_test))
