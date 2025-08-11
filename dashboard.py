@@ -56,4 +56,4 @@ if submitted:
     # Prediksi
     prediction = model.predict(input_data)[0]
 
-st.success(f"📌 Prediksi Inflasi Total untuk **{bulan_input} {tahun_input}** adalah: **{prediction:.2f}%**")
+    st.success(f"📌 Prediksi Inflasi Total untuk **{bulan_input} {tahun_input}** adalah: **{prediction:.2f}%**")
