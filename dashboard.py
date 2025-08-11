@@ -1,112 +1,102 @@
-# dashboard.py
 import streamlit as st
 import pandas as pd
-import numpy as np
 import joblib
-from datetime import datetime
-from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error, mean_absolute_percentage_error
-import xgboost as xgb
+import numpy as np
+from xgboost import XGBRegressor, Booster, DMatrix
+from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 
-# =========================
-# 1. Load Model & Data
-# =========================
-MODEL_PATH = "model_inflasi.pkl"  # path ke file pkl
-SCALER_PATH = "scaler.pkl"        # kalau ada scaler
-FEATURES_PATH = "features.pkl"    # kalau ada daftar fitur
+# ======================
+# 1. Load Model
+# ======================
+MODEL_PATH = "model_inflasi.pkl"  # atau "final_model.pkl"
 
-st.set_page_config(page_title="Dashboard Prediksi Inflasi", layout="wide")
-
-# Load model dari file pkl
 @st.cache_resource
 def load_model():
-    model = joblib.load(MODEL_PATH)
-    return model
-
-# Load scaler kalau ada
-@st.cache_resource
-def load_scaler():
-    try:
-        return joblib.load(SCALER_PATH)
-    except:
-        return None
-
-# Load daftar fitur kalau ada
-@st.cache_resource
-def load_features():
-    try:
-        return joblib.load(FEATURES_PATH)
-    except:
-        return None
+    if MODEL_PATH.endswith(".json"):
+        model = Booster()
+        model.load_model(MODEL_PATH)
+        return model
+    else:
+        return joblib.load(MODEL_PATH)
 
 model = load_model()
-scaler = load_scaler()
-features = load_features()
 
-# =========================
-# 2. Input User
-# =========================
-st.title("📈 Prediksi Inflasi Bulanan Indonesia")
-st.write("Masukkan variabel-variabel ekonomi untuk memprediksi inflasi.")
+# ======================
+# 2. Sidebar Menu
+# ======================
+st.sidebar.title("📊 Menu")
+menu = st.sidebar.radio("Pilih Halaman:", ["Prediksi Manual", "Prediksi dari File", "Evaluasi Model"])
 
-bulan_label = [
-    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-]
+# ======================
+# 3. Halaman Prediksi Manual
+# ======================
+if menu == "Prediksi Manual":
+    st.title("🔮 Prediksi Inflasi (Input Manual)")
 
-tahun_input = st.number_input("Tahun Prediksi", min_value=2000, max_value=2100, value=datetime.now().year)
-bulan_input = st.selectbox("Bulan Prediksi", bulan_label, index=6)  # default Juli
+    # List fitur
+    features = ['BI_Rate', 'BBM', 'Kurs_USD_IDR', 'Harga_Beras', 'Inflasi_Inti', 'Inflasi_Total']
+    input_data = {}
 
-# Input variabel (contoh variabel makro)
-BI_Rate = st.number_input("BI Rate (%)", value=6.0, step=0.1)
-BBM = st.number_input("Harga BBM (Rp/liter)", value=10000, step=100)
-Kurs_USD_IDR = st.number_input("Kurs USD/IDR", value=15000, step=10)
-Harga_Beras = st.number_input("Harga Beras (Rp/kg)", value=12000, step=100)
-Inflasi_Inti = st.number_input("Inflasi Inti (%)", value=3.0, step=0.1)
-Inflasi_Total = st.number_input("Inflasi Total (%)", value=4.0, step=0.1)
+    for feat in features:
+        input_data[feat] = st.number_input(f"{feat}", value=0.0)
 
-# Gabungkan input jadi DataFrame
-input_data = pd.DataFrame([[
-    BI_Rate, BBM, Kurs_USD_IDR, Harga_Beras, Inflasi_Inti, Inflasi_Total
-]], columns=['BI_Rate', 'BBM', 'Kurs_USD_IDR', 'Harga_Beras', 'Inflasi_Inti', 'Inflasi_Total'])
+    if st.button("Prediksi"):
+        df_input = pd.DataFrame([input_data])
 
-# Scaling jika scaler tersedia
-if scaler:
-    input_data = pd.DataFrame(scaler.transform(input_data), columns=input_data.columns)
+        if isinstance(model, Booster):
+            dmatrix_input = DMatrix(df_input, feature_names=df_input.columns)
+            pred = model.predict(dmatrix_input)[0]
+        else:
+            pred = model.predict(df_input)[0]
 
-# =========================
-# 3. Prediksi
-# =========================
-if st.button("🔮 Prediksi Inflasi"):
-    y_pred = model.predict(input_data)[0]
-    st.success(f"Prediksi Inflasi Bulan {bulan_input} {tahun_input}: **{y_pred:.2f}%**")
+        st.success(f"📈 Hasil Prediksi: {pred:.2f}")
 
-# =========================
-# 4. Evaluasi Model
-# =========================
-st.subheader("📊 Evaluasi Model (Data Uji)")
+# ======================
+# 4. Halaman Prediksi dari File
+# ======================
+elif menu == "Prediksi dari File":
+    st.title("📂 Prediksi Inflasi (Upload CSV)")
 
-uploaded_file = st.file_uploader("Upload Dataset Uji (CSV)", type="csv")
-if uploaded_file:
-    df_test = pd.read_csv(uploaded_file)
+    uploaded_file = st.file_uploader("Upload file CSV dengan kolom fitur lengkap", type=["csv"])
+    if uploaded_file:
+        df = pd.read_csv(uploaded_file)
+        st.write("Data yang diupload:")
+        st.dataframe(df.head())
 
-    if features:
-        X_test = df_test[features]
-    else:
-        X_test = df_test.drop(columns=["target"], errors="ignore")
+        if isinstance(model, Booster):
+            dmatrix_input = DMatrix(df, feature_names=df.columns)
+            preds = model.predict(dmatrix_input)
+        else:
+            preds = model.predict(df)
 
-    y_test = df_test["target"]
+        df['Prediksi'] = preds
+        st.write("📊 Hasil Prediksi:")
+        st.dataframe(df)
+        st.download_button("Download Hasil", df.to_csv(index=False), "prediksi.csv", "text/csv")
 
-    if scaler:
-        X_test = pd.DataFrame(scaler.transform(X_test), columns=X_test.columns)
+# ======================
+# 5. Halaman Evaluasi Model
+# ======================
+elif menu == "Evaluasi Model":
+    st.title("📏 Evaluasi Model XGBoost")
 
-    y_pred_test = model.predict(X_test)
+    try:
+        X_test, y_test = joblib.load("test_data.pkl")
 
-    mae = mean_absolute_error(y_test, y_pred_test)
-    rmse = np.sqrt(mean_squared_error(y_test, y_pred_test))
-    r2 = r2_score(y_test, y_pred_test)
-    mape = mean_absolute_percentage_error(y_test, y_pred_test) * 100
+        if isinstance(model, Booster):
+            dmatrix_test = DMatrix(X_test, label=y_test, feature_names=X_test.columns)
+            y_pred = model.predict(dmatrix_test)
+        else:
+            y_pred = model.predict(X_test)
 
-    st.write(f"**MAE:** {mae:.4f}")
-    st.write(f"**RMSE:** {rmse:.4f}")
-    st.write(f"**R²:** {r2:.4f}")
-    st.write(f"**MAPE:** {mape:.2f}%")
+        mae = mean_absolute_error(y_test, y_pred)
+        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+        r2 = r2_score(y_test, y_pred)
+        mape = np.mean(np.abs((y_test - y_pred) / y_test)) * 100
+
+        st.metric("MAE", f"{mae:.4f}")
+        st.metric("RMSE", f"{rmse:.4f}")
+        st.metric("R²", f"{r2:.4f}")
+        st.metric("MAPE", f"{mape:.2f}%")
+    except FileNotFoundError:
+        st.error("❌ File test_data.pkl tidak ditemukan. Upload dulu file tersebut.")
