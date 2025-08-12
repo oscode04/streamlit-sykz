@@ -34,43 +34,53 @@ def reorder_features(df, feature_list):
     return df
 
 def preprocess_and_update_histori(
-    csv_path,
-    input_user_dict,
-    feature_list,
+    csv_path, input_user_dict, feature_list,
     lag_columns=['BI_Rate', 'BBM', 'Kurs_USD_IDR', 'Harga_Beras', 'Inflasi_Inti', 'Inflasi_Total', 'bulan_sin', 'bulan_cos'],
-    windows=[3, 6, 12],
-    lags=[1, 3, 6, 12]
+    windows=[3,6,12], lags=[1,3,6,12]
 ):
-    # Load data histori
     df_histori = pd.read_csv(csv_path)
 
     tahun = input_user_dict['Tahun']
     bulan = input_user_dict['Bulan']
 
-    # Update atau tambahkan baris baru
+    # Update atau tambah data input_user
     idx = df_histori[(df_histori['Tahun'] == tahun) & (df_histori['Bulan'] == bulan)].index
     if len(idx) > 0:
         df_histori.loc[idx[0], list(input_user_dict.keys())] = list(input_user_dict.values())
     else:
         df_histori = pd.concat([df_histori, pd.DataFrame([input_user_dict])], ignore_index=True)
 
-    # Encode bulan jadi sin/cos dan Bulan_Num
+    # Encode bulan dulu
     df_histori = encode_bulan(df_histori)
 
-    # Sort supaya rolling & lag sesuai urutan waktu
+    # Urutkan berdasarkan Tahun dan Bulan_Num
     df_histori = df_histori.sort_values(['Tahun', 'Bulan_Num']).reset_index(drop=True)
 
-    # **Urutan preprocessing sesuai model: rolling dulu, baru lag**
-    df_histori = add_rolling_features(df_histori, lag_columns, windows)
+    # 1. Generate lag features dulu
     df_histori = generate_lag_features(df_histori, lag_columns, lags)
 
-    # Drop baris dengan NaN (rolling dan lag menghasilkan NaN di awal)
-    df_histori = df_histori.dropna().reset_index(drop=True)
+    # 2. Tentukan kolom untuk rolling: lag_columns plus lag columns
+    rolling_cols = lag_columns.copy()
+    for col in lag_columns:
+        for lag in lags:
+            col_lag = f"{col}_lag{lag}"
+            if col_lag in df_histori.columns:
+                rolling_cols.append(col_lag)
 
-    # Ambil baris terakhir untuk inferensi
+    # 3. Generate rolling features (mean, std)
+    df_histori = add_rolling_features(df_histori, rolling_cols, windows)
+
+    # 4. Isi NaN dengan 0 agar kolom lag dan rolling tetap lengkap dan tidak error
+    df_histori = df_histori.fillna(0)
+
+    # 5. Ambil baris terakhir untuk inferensi
     df_infer = df_histori.iloc[[-1]]
 
-    # Reorder kolom supaya sama persis dengan fitur training (tambahkan kolom kosong jika perlu)
-    df_infer = reorder_features(df_infer, feature_list)
+    # 6. Reorder fitur sesuai feature_list (tambahkan kolom kosong jika tidak ada)
+    for col in feature_list:
+        if col not in df_infer.columns:
+            df_infer[col] = 0
+    df_infer = df_infer[feature_list]
 
     return df_infer, df_histori
+
