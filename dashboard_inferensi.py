@@ -1,7 +1,6 @@
 import streamlit as st
 from src.preprocessing import preprocess_and_update_histori
 from src.inference import predict_inflasi
-import pandas as pd
 from datetime import datetime
 
 # Load fitur training yang sudah lengkap dan urut
@@ -10,32 +9,30 @@ with open('data/features_training.txt') as f:
 
 st.title("📈 Prediksi Inflasi - Dashboard Forecasting")
 
-# # ===== Dropdown untuk memilih bulan dan tahun =====
-# st.subheader("📆 Pilih Bulan & Tahun Prediksi")
+# ====== Kotak Input Data ======
+st.markdown(
+    """
+    <style>
+    .input-box {
+        border: 2px solid white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+    }
+    .input-box h4 {
+        margin-top: 0;
+        color: white;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-import streamlit as st
-from datetime import datetime
-
-import streamlit as st
-from datetime import datetime
-
-# Container dengan border putih
 with st.container():
-    st.markdown(
-        """
-        <div style="
-            border: 2px solid white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
-            margin-bottom: 20px;
-        ">
-        <h4 style="margin-top:0; color: white;">📦 Input Data Ekonomi (Bulan Sebelumnya)</h4>
-        """,
-        unsafe_allow_html=True
-    )
+    st.markdown('<div class="input-box"><h4>📦 Input Data Ekonomi (Bulan Sebelumnya)</h4>', unsafe_allow_html=True)
 
-    # Input form
     tahun = st.number_input("Tahun", value=datetime.now().year, min_value=2010, max_value=2030)
     bulan = st.selectbox("Bulan", 
                          ["Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -49,8 +46,7 @@ with st.container():
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-
-
+# ====== Tombol Prediksi ======
 if st.button("Prediksi Inflasi"):
     input_user = {
         'Tahun': tahun,
@@ -68,8 +64,4 @@ if st.button("Prediksi Inflasi"):
     df_infer, df_histori = preprocess_and_update_histori(csv_path, input_user, features_training)
     prediksi = predict_inflasi(model_path, df_infer, features_training)
 
-    # st.success(f"Prediksi Inflasi Total bulan depan: {prediksi:.2f}%")
     st.success(f"📌 Prediksi Inflasi untuk **{bulan} {tahun}** adalah: **{prediksi:.2f}%**")
-
-
-
