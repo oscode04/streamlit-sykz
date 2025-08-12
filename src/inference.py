@@ -9,17 +9,24 @@ def predict_inflasi(model_path, df_features):
     model = Booster()
     model.load_model(model_path)
     
-    # Buat DMatrix dari fitur (hapus kolom target jika ada)
-    # Asumsi kolom target 'Inflasi_Total' juga ada di df_features, kita drop supaya hanya fitur saja
-    if 'Inflasi_Total' in df_features.columns:
-        X = df_features.drop(columns=['Inflasi_Total'])
-    else:
-        X = df_features.copy()
+    # Copy dataframe supaya tidak mengubah aslinya
+    X = df_features.copy()
+
+    # Drop kolom target dan kolom 'Bulan' yang bertipe object, supaya hanya fitur numerik yang masuk
+    cols_to_drop = []
+    if 'Inflasi_Total' in X.columns:
+        cols_to_drop.append('Inflasi_Total')
+    if 'Bulan' in X.columns:
+        cols_to_drop.append('Bulan')
+
+    if cols_to_drop:
+        X = X.drop(columns=cols_to_drop)
     
+    # Buat DMatrix dari fitur
     dmatrix = DMatrix(X)
     
     # Prediksi
     preds = model.predict(dmatrix)
     
-    # Prediksi hanya 1 baris, jadi ambil elemen pertama
+    # Ambil prediksi pertama (karena hanya 1 baris input)
     return preds[0]
