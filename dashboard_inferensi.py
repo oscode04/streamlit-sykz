@@ -109,7 +109,8 @@ if st.sidebar.button("Prediksi Inflasi"):
     csv_path = 'data/data_inflasi.csv'
     model_path = 'model/model_inflasi.model'
 
-    df_infer, df_histori = preprocess_and_update_histori(csv_path, input_user)
+    df_infer, df_histori = preprocess_and_update_histori(csv_path, input_user, features_training)
+    # df_infer, df_histori = preprocess_and_update_histori('data/data_inflasi.csv', input_user, features_training)
 
     # Reorder kolom fitur supaya sesuai dengan training
     df_infer = df_infer[features_training]
@@ -118,5 +119,5 @@ if st.sidebar.button("Prediksi Inflasi"):
 
     st.success("✅ Inflasi rendah dan terkendali.")
 
-df_infer, df_histori = preprocess_and_update_histori('data/data_inflasi.csv', input_user, features_training)
+
 
