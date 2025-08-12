@@ -118,4 +118,5 @@ if st.sidebar.button("Prediksi Inflasi"):
 
     st.success("✅ Inflasi rendah dan terkendali.")
 
+df_infer, df_histori = preprocess_and_update_histori('data/data_inflasi.csv', input_user, features_training)
 

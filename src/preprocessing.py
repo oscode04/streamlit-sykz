@@ -37,11 +37,14 @@ def reorder_features(df, feature_list):
     return df
 
 def preprocess_and_update_histori(
-    csv_path, input_user_dict,
+    csv_path, input_user_dict, feature_list,
     lag_columns=['BI_Rate', 'BBM', 'Kurs_USD_IDR', 'Harga_Beras', 'Inflasi_Inti', 'Inflasi_Total', 'bulan_sin', 'bulan_cos'],
     windows=[3,6,12], lags=[1,3,6,12]
 ):
+    # Load data historis
     df_histori = pd.read_csv(csv_path)
+
+    # Update atau tambah data input user ke histori
     tahun = input_user_dict['Tahun']
     bulan = input_user_dict['Bulan']
     idx = df_histori[(df_histori['Tahun'] == tahun) & (df_histori['Bulan'] == bulan)].index
@@ -49,11 +52,26 @@ def preprocess_and_update_histori(
         df_histori.loc[idx[0], list(input_user_dict.keys())] = list(input_user_dict.values())
     else:
         df_histori = pd.concat([df_histori, pd.DataFrame([input_user_dict])], ignore_index=True)
-    df_histori = encode_bulan(df_histori)
-    df_histori = df_histori.sort_values(['Tahun', 'Bulan_Num']).reset_index(drop=True)
-    df_histori = add_rolling_features(df_histori, lag_columns, windows)
-    df_histori = generate_lag_features(df_histori, lag_columns, lags)
-    df_histori = df_histori.dropna().reset_index(drop=True)
-    df_infer = df_histori.iloc[[-1]]
-    return df_infer, df_histori
 
+    # Encode bulan dan buat fitur sinus & cosinus
+    df_histori = encode_bulan(df_histori)
+
+    # Urutkan data berdasarkan Tahun dan Bulan_Num
+    df_histori = df_histori.sort_values(['Tahun', 'Bulan_Num']).reset_index(drop=True)
+
+    # Tambah fitur rolling mean & std untuk kolom lag_columns
+    df_histori = add_rolling_features(df_histori, lag_columns, windows)
+
+    # Tambah fitur lag untuk kolom lag_columns
+    df_histori = generate_lag_features(df_histori, lag_columns, lags)
+
+    # Isi nilai NaN dengan 0 agar semua fitur rolling dan lag tetap ada
+    df_histori = df_histori.fillna(0).reset_index(drop=True)
+
+    # Ambil data baris terakhir untuk inferensi
+    df_infer = df_histori.iloc[[-1]]
+
+    # Reorder kolom agar sesuai dengan fitur yang dipakai model
+    df_infer = reorder_features(df_infer, feature_list)
+
+    return df_infer, df_histori
