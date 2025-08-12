@@ -28,7 +28,8 @@ def generate_lag_features(df, columns, lags=[1, 3, 6, 12]):
 def preprocess_and_update_histori(
     csv_path, input_user_dict,
     lag_columns=['BI_Rate', 'BBM', 'Kurs_USD_IDR', 'Harga_Beras', 'Inflasi_Inti', 'Inflasi_Total', 'bulan_sin', 'bulan_cos'],
-    windows=[3, 6, 12], lags=[1, 3, 6, 12]
+    windows=[3, 6, 12], lags=[1, 3, 6, 12],
+    model_feature_cols=None  # tambahan parameter list kolom fitur yang diharapkan model
 ):
     df_histori = pd.read_csv(csv_path)
     tahun = input_user_dict['Tahun']
@@ -47,23 +48,29 @@ def preprocess_and_update_histori(
     # Sort
     df_histori = df_histori.sort_values(['Tahun', 'Bulan_Num']).reset_index(drop=True)
 
-    # Tambah fitur roll dan lag (pastikan lag_columns sudah lengkap dengan bulan_sin dan bulan_cos)
+    # Tambah fitur roll dan lag
     df_histori = add_rolling_features(df_histori, lag_columns, windows)
     df_histori = generate_lag_features(df_histori, lag_columns, lags)
 
-    # Drop baris NaN
+    # Drop baris NaN (karena rolling dan lag menghasilkan NaN di awal)
     df_histori = df_histori.dropna().reset_index(drop=True)
 
     # Ambil baris terakhir untuk inferensi
     df_infer = df_histori.iloc[[-1]].copy()
 
-    # Hapus kolom yang TIDAK dipakai oleh model (target dan kolom Bulan dan Bulan_Num)
-    for drop_col in ['Inflasi_Total', 'Bulan', 'Bulan_Num']:
-        if drop_col in df_infer.columns:
-            df_infer = df_infer.drop(columns=[drop_col])
+    # Hapus kolom yang tidak dipakai model: target dan kolom Bulan, Bulan_Num
+    drop_cols = ['Inflasi_Total', 'Bulan', 'Bulan_Num']
+    for col in drop_cols:
+        if col in df_infer.columns:
+            df_infer = df_infer.drop(columns=[col])
 
-    # Pastikan kolom di df_infer sesuai dengan kolom yang dipakai model saat training
-    # (Bisa dicek via list X.columns saat training)
+    # **KOREKSI PENTING: pastikan urutan dan kolom fitur sesuai dengan yang dipakai saat training**
+    if model_feature_cols is not None:
+        # Buat df_infer hanya dengan kolom yang dipakai model (urut sesuai list)
+        missing_cols = set(model_feature_cols) - set(df_infer.columns)
+        if missing_cols:
+            raise ValueError(f"Fitur hilang di data inferensi: {missing_cols}")
+
+        df_infer = df_infer[model_feature_cols]
 
     return df_infer, df_histori
-
