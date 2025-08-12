@@ -109,15 +109,27 @@ if st.sidebar.button("Prediksi Inflasi"):
     csv_path = 'data/data_inflasi.csv'
     model_path = 'model/model_inflasi.model'
 
+    # Pastikan preprocess menerima feature_list agar langsung reorder
     df_infer, df_histori = preprocess_and_update_histori(csv_path, input_user, features_training)
-    # df_infer, df_histori = preprocess_and_update_histori('data/data_inflasi.csv', input_user, features_training)
 
-    # Reorder kolom fitur supaya sesuai dengan training
-    df_infer = df_infer[features_training]
+    # Kalau belum reorder di fungsi, bisa juga reorder di sini (tapi harus pastikan semua kolom ada)
+    # df_infer = reorder_features(df_infer, features_training)
 
     prediksi = predict_inflasi(model_path, df_infer)
 
-    st.success("✅ Inflasi rendah dan terkendali.")
+    st.subheader("📊 Hasil Prediksi")
+    st.metric(label="Prediksi Inflasi Bulanan (%)", value=f"{prediksi:.2f}")
+
+    if prediksi > 5:
+        st.warning("⚠️ Inflasi cukup tinggi, waspada kenaikan harga barang.")
+    elif prediksi > 3:
+        st.info("ℹ️ Inflasi dalam batas wajar namun perlu diwaspadai.")
+    else:
+        st.success("✅ Inflasi rendah dan terkendali.")
+
+    with st.expander("Lihat Data Input"):
+        st.dataframe(pd.DataFrame([input_user]))
+
 
 
 
