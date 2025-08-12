@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 
-# Mapping nama bulan ke angka
 mapping_bulan = {
     'Januari': 1, 'Februari': 2, 'Maret': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
     'Juli': 7, 'Agustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'Desember': 12
@@ -28,8 +27,8 @@ def generate_lag_features(df, columns, lags=[1, 3, 6, 12]):
 
 def preprocess_and_update_histori(
     csv_path, input_user_dict,
-    lag_columns=['BI_Rate', 'BBM', 'Kurs_USD_IDR', 'Harga_Beras', 'Inflasi_Inti', 'Inflasi_Total'],
-    windows=[3,6,12], lags=[1,3,6,12]
+    lag_columns=['BI_Rate', 'BBM', 'Kurs_USD_IDR', 'Harga_Beras', 'Inflasi_Inti', 'Inflasi_Total', 'bulan_sin', 'bulan_cos'],
+    windows=[3, 6, 12], lags=[1, 3, 6, 12]
 ):
     # 1. Load histori CSV
     df_histori = pd.read_csv(csv_path)
@@ -37,7 +36,6 @@ def preprocess_and_update_histori(
     # 2. Update atau tambah data input user
     tahun = input_user_dict['Tahun']
     bulan = input_user_dict['Bulan']
-    # Cek apakah data sudah ada
     idx = df_histori[(df_histori['Tahun'] == tahun) & (df_histori['Bulan'] == bulan)].index
     if len(idx) > 0:
         # Update baris existing
@@ -46,8 +44,7 @@ def preprocess_and_update_histori(
         # Tambah baris baru
         df_histori = pd.concat([df_histori, pd.DataFrame([input_user_dict])], ignore_index=True)
 
-    # 3. Sort data berdasarkan Tahun dan Bulan (agar rolling/lag benar)
-    # Ubah bulan ke angka dulu
+    # 3. Encode bulan dan sort supaya rolling & lag benar
     df_histori = encode_bulan(df_histori)
     df_histori = df_histori.sort_values(['Tahun', 'Bulan_Num']).reset_index(drop=True)
 
@@ -58,7 +55,13 @@ def preprocess_and_update_histori(
     # 5. Drop baris dengan NaN (rolling/lag di awal data)
     df_histori = df_histori.dropna().reset_index(drop=True)
 
-    # 6. Ambil baris terakhir (input user sudah termasuk) sebagai data siap inferensi
-    df_infer = df_histori.iloc[[-1]]
+    # 6. Ambil baris terakhir sebagai data inferensi (fitur lengkap)
+    df_infer = df_histori.iloc[[-1]].copy()
+
+    # 7. Drop kolom yang tidak perlu untuk model (target & kolom Bulan yang bukan numeric)
+    drop_cols = ['Inflasi_Total', 'Bulan', 'Bulan_Num']
+    for col in drop_cols:
+        if col in df_infer.columns:
+            df_infer = df_infer.drop(columns=[col])
 
     return df_infer, df_histori
