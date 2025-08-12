@@ -8,6 +8,9 @@ from xgboost import Booster, DMatrix
 from src.preprocessing import preprocess_and_update_histori
 from src.inference import predict_inflasi
 
+with open("features_training.txt") as f:
+    features_training = [line.strip() for line in f.readlines()]
+
 # Fungsi dari kode sebelumnya (preprocessing & update histori)
 mapping_bulan = {
     'Januari': 1, 'Februari': 2, 'Maret': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
