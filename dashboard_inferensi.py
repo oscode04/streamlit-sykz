@@ -10,6 +10,24 @@ with open('data/features_training.txt') as f:
 
 st.title("📈 Prediksi Inflasi - Dashboard Forecasting")
 
+st.markdown("""
+Masukkan data ekonomi **bulan sebelumnya** untuk memprediksi **inflasi bulan berikutnya**.
+""")
+
+# ===== Dropdown untuk memilih bulan dan tahun =====
+st.subheader("📆 Pilih Bulan & Tahun Prediksi")
+
+# List nama bulan
+bulan_dict = {
+    "Januari": 1, "Februari": 2, "Maret": 3, "April": 4,
+    "Mei": 5, "Juni": 6, "Juli": 7, "Agustus": 8,
+    "September": 9, "Oktober": 10, "November": 11, "Desember": 12
+}
+
+bulan_label = list(bulan_dict.keys())
+
+tahun_input = st.selectbox("Tahun Prediksi", list(range(2015, 2031)), index=2025-2015)
+
 # Input user
 tahun = st.number_input("Tahun", value=datetime.now().year, min_value=2000, max_value=2100)
 bulan = st.selectbox("Bulan", 
