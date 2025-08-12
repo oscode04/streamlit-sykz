@@ -30,51 +30,59 @@ def ensure_all_features(df, feature_list):
     for col in feature_list:
         if col not in df.columns:
             df[col] = 0
-    # Urutkan kolom sesuai feature_list
     df = df[feature_list]
     return df
 
 def preprocess_and_update_histori(
     csv_path, input_user_dict, feature_list,
-    lag_columns = ['BI_Rate', 'BBM', 'Kurs_USD_IDR', 'Harga_Beras', 'Inflasi_Inti', 'Inflasi_Total', 'bulan_sin', 'bulan_cos'],
-    windows=[3,6,12], lags=[1,3,6,12]
+    lag_columns=['BI_Rate', 'BBM', 'Kurs_USD_IDR', 'Harga_Beras', 'Inflasi_Inti', 'Inflasi_Total', 'bulan_sin', 'bulan_cos'],
+    windows=[3, 6, 12], lags=[1, 3, 6, 12]
 ):
+    # Load data CSV
     df_histori = pd.read_csv(csv_path)
-    
+
     tahun = input_user_dict['Tahun']
     bulan = input_user_dict['Bulan']
-    
-    # Update data atau tambah baris baru
+
+    # Update data user atau tambah baris baru
     idx = df_histori[(df_histori['Tahun'] == tahun) & (df_histori['Bulan'] == bulan)].index
     if len(idx) > 0:
         df_histori.loc[idx[0], list(input_user_dict.keys())] = list(input_user_dict.values())
     else:
         df_histori = pd.concat([df_histori, pd.DataFrame([input_user_dict])], ignore_index=True)
-    
+
+    # Encode bulan jadi numerik dan sin-cos encoding
     df_histori = encode_bulan(df_histori)
+
+    # Urutkan berdasarkan Tahun dan Bulan_Num
     df_histori = df_histori.sort_values(['Tahun', 'Bulan_Num']).reset_index(drop=True)
-    
-    # Generate lag features, termasuk bulan_sin & bulan_cos
-    all_lag_cols = lag_columns + ['bulan_sin', 'bulan_cos']
+
+    # Generate lag features (termasuk bulan_sin & bulan_cos)
+    all_lag_cols = lag_columns.copy()
+    if 'bulan_sin' not in all_lag_cols:
+        all_lag_cols.append('bulan_sin')
+    if 'bulan_cos' not in all_lag_cols:
+        all_lag_cols.append('bulan_cos')
     df_histori = generate_lag_features(df_histori, all_lag_cols, lags)
-    
-    # Tentukan kolom rolling termasuk lag features yang baru dibuat
+
+    # Tentukan kolom untuk rolling (kolom asli + lag features)
     rolling_cols = all_lag_cols.copy()
     for col in all_lag_cols:
         for lag in lags:
-            col_lag = f"{col}_lag{lag}"
-            if col_lag in df_histori.columns:
-                rolling_cols.append(col_lag)
-    
+            lag_col = f"{col}_lag{lag}"
+            if lag_col in df_histori.columns:
+                rolling_cols.append(lag_col)
+
+    # Generate fitur rolling mean dan std
     df_histori = add_rolling_features(df_histori, rolling_cols, windows)
-    
-    # Isi NaN dengan 0 supaya tidak error waktu inferensi
+
+    # Isi NaN dengan 0 agar tidak error saat inferensi
     df_histori = df_histori.fillna(0)
-    
-    # Ambil baris terakhir untuk inferensi
+
+    # Ambil baris terakhir sebagai data inferensi
     df_infer = df_histori.iloc[[-1]]
-    
-    # Pastikan kolom sesuai feature_list dan urut
+
+    # Pastikan fitur lengkap sesuai feature_list dan urut
     df_infer = ensure_all_features(df_infer, feature_list)
-    
+
     return df_infer, df_histori
