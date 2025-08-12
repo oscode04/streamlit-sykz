@@ -11,30 +11,9 @@ with open('data/features_training.txt') as f:
 st.title("📈 Prediksi Inflasi - Dashboard Forecasting")
 
 st.markdown("""
-<style>
-.input-box {
-    border: 2px solid white;
-    border-radius: 10px;
-    padding: 20px;
-    margin-top: 20px;
-    margin-bottom: 20px;
-}
-.input-box h4 {
-    margin-top: 0;
-    color: white;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# Mulai kotak input
-st.markdown('<div class="input-box">', unsafe_allow_html=True)
-st.markdown("#### 📦 Input Data Ekonomi (Bulan Sebelumnya)", unsafe_allow_html=True)
-
-st.markdown("""
-Masukkan data ekonomi **bulan sebelumnya** untuk memprediksi **inflasi bulan berikutnya**.
+📦 Masukkan data ekonomi **bulan sebelumnya** untuk memprediksi **inflasi bulan berikutnya**.
 """)
-# Tutup kotak input
-st.markdown("</div>", unsafe_allow_html=True)
+
 # Input user
 tahun = st.number_input("Tahun", value=datetime.now().year, min_value=2010, max_value=2030)
 bulan = st.selectbox("Bulan", 
