@@ -13,6 +13,10 @@ st.title("📈 Prediksi Inflasi - Dashboard Forecasting")
 # # ===== Dropdown untuk memilih bulan dan tahun =====
 # st.subheader("📆 Pilih Bulan & Tahun Prediksi")
 
+import streamlit as st
+from datetime import datetime
+
+# Kotak dengan border putih
 st.markdown(
     """
     <div style="
@@ -27,11 +31,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# st.markdown("""
-# Masukkan data ekonomi **bulan sebelumnya** untuk memprediksi **inflasi bulan berikutnya**.
-# """)
-
-# Input user
+# Form input
 tahun = st.number_input("Tahun", value=datetime.now().year, min_value=2010, max_value=2030)
 bulan = st.selectbox("Bulan", 
                      ["Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -44,6 +44,7 @@ Inflasi_Inti = st.number_input("Inflasi Inti (%)", value=2.5, step=0.01)
 Inflasi_Total = st.number_input("Inflasi Total (%)", value=2.7, step=0.01)
 
 st.markdown("</div>", unsafe_allow_html=True)
+
 
 if st.button("Prediksi Inflasi"):
     input_user = {
