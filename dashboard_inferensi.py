@@ -26,6 +26,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# Mulai kotak input
+st.markdown('<div class="input-box">', unsafe_allow_html=True)
+st.markdown("#### 📦 Input Data Ekonomi (Bulan Sebelumnya)", unsafe_allow_html=True)
+
 st.markdown("""
 Masukkan data ekonomi **bulan sebelumnya** untuk memprediksi **inflasi bulan berikutnya**.
 """)
