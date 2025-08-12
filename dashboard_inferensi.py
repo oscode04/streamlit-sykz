@@ -15,14 +15,21 @@ st.title("📈 Prediksi Inflasi - Dashboard Forecasting")
 
 st.markdown(
     """
-    <div style="border: 2px solid #ddd; padding: 10px; border-radius: 8px;">
+    <div style="
+        border: 2px solid white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+    ">
+    <h4 style="margin-top:0; color: white;">📦 Input Data Ekonomi (Bulan Sebelumnya)</h4>
     """,
     unsafe_allow_html=True
 )
 
-st.markdown("""
-Masukkan data ekonomi **bulan sebelumnya** untuk memprediksi **inflasi bulan berikutnya**.
-""")
+# st.markdown("""
+# Masukkan data ekonomi **bulan sebelumnya** untuk memprediksi **inflasi bulan berikutnya**.
+# """)
 
 # Input user
 tahun = st.number_input("Tahun", value=datetime.now().year, min_value=2010, max_value=2030)
