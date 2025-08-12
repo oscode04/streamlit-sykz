@@ -30,38 +30,40 @@ def preprocess_and_update_histori(
     lag_columns=['BI_Rate', 'BBM', 'Kurs_USD_IDR', 'Harga_Beras', 'Inflasi_Inti', 'Inflasi_Total', 'bulan_sin', 'bulan_cos'],
     windows=[3, 6, 12], lags=[1, 3, 6, 12]
 ):
-    # 1. Load histori CSV
     df_histori = pd.read_csv(csv_path)
-
-    # 2. Update atau tambah data input user
     tahun = input_user_dict['Tahun']
     bulan = input_user_dict['Bulan']
+
+    # Update atau tambah data baru
     idx = df_histori[(df_histori['Tahun'] == tahun) & (df_histori['Bulan'] == bulan)].index
     if len(idx) > 0:
-        # Update baris existing
         df_histori.loc[idx[0], list(input_user_dict.keys())] = list(input_user_dict.values())
     else:
-        # Tambah baris baru
         df_histori = pd.concat([df_histori, pd.DataFrame([input_user_dict])], ignore_index=True)
 
-    # 3. Encode bulan dan sort supaya rolling & lag benar
+    # Encode bulan
     df_histori = encode_bulan(df_histori)
+
+    # Sort
     df_histori = df_histori.sort_values(['Tahun', 'Bulan_Num']).reset_index(drop=True)
 
-    # 4. Tambah fitur rolling dan lag
+    # Tambah fitur roll dan lag (pastikan lag_columns sudah lengkap dengan bulan_sin dan bulan_cos)
     df_histori = add_rolling_features(df_histori, lag_columns, windows)
     df_histori = generate_lag_features(df_histori, lag_columns, lags)
 
-    # 5. Drop baris dengan NaN (rolling/lag di awal data)
+    # Drop baris NaN
     df_histori = df_histori.dropna().reset_index(drop=True)
 
-    # 6. Ambil baris terakhir sebagai data inferensi (fitur lengkap)
+    # Ambil baris terakhir untuk inferensi
     df_infer = df_histori.iloc[[-1]].copy()
 
-    # 7. Drop kolom yang tidak perlu untuk model (target & kolom Bulan yang bukan numeric)
-    drop_cols = ['Inflasi_Total', 'Bulan', 'Bulan_Num']
-    for col in drop_cols:
-        if col in df_infer.columns:
-            df_infer = df_infer.drop(columns=[col])
+    # Hapus kolom yang TIDAK dipakai oleh model (target dan kolom Bulan dan Bulan_Num)
+    for drop_col in ['Inflasi_Total', 'Bulan', 'Bulan_Num']:
+        if drop_col in df_infer.columns:
+            df_infer = df_infer.drop(columns=[drop_col])
+
+    # Pastikan kolom di df_infer sesuai dengan kolom yang dipakai model saat training
+    # (Bisa dicek via list X.columns saat training)
 
     return df_infer, df_histori
+
