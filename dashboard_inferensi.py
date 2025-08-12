@@ -36,6 +36,8 @@ Harga_Beras = st.number_input("Harga Beras (Rp/kg)", value=12000, step=50)
 Inflasi_Inti = st.number_input("Inflasi Inti (%)", value=2.5, step=0.01)
 Inflasi_Total = st.number_input("Inflasi Total (%)", value=2.7, step=0.01)
 
+st.markdown("</div>", unsafe_allow_html=True)
+
 if st.button("Prediksi Inflasi"):
     input_user = {
         'Tahun': tahun,
@@ -56,5 +58,5 @@ if st.button("Prediksi Inflasi"):
     # st.success(f"Prediksi Inflasi Total bulan depan: {prediksi:.2f}%")
     st.success(f"📌 Prediksi Inflasi untuk **{bulan} {tahun}** adalah: **{prediksi:.2f}%**")
 
-st.markdown("</div>", unsafe_allow_html=True)
+
 
