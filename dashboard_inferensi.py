@@ -16,34 +16,39 @@ st.title("📈 Prediksi Inflasi - Dashboard Forecasting")
 import streamlit as st
 from datetime import datetime
 
-# Kotak dengan border putih
-st.markdown(
-    """
-    <div style="
-        border: 2px solid white;
-        border-radius: 10px;
-        padding: 20px;
-        margin-top: 20px;
-        margin-bottom: 20px;
-    ">
-    <h4 style="margin-top:0; color: white;">📦 Input Data Ekonomi (Bulan Sebelumnya)</h4>
-    """,
-    unsafe_allow_html=True
-)
+import streamlit as st
+from datetime import datetime
 
-# Form input
-tahun = st.number_input("Tahun", value=datetime.now().year, min_value=2010, max_value=2030)
-bulan = st.selectbox("Bulan", 
-                     ["Januari", "Februari", "Maret", "April", "Mei", "Juni",
-                      "Juli", "Agustus", "September", "Oktober", "November", "Desember"], index=6)
-BI_Rate = st.number_input("BI Rate (%)", value=6.0, step=0.01)
-BBM = st.number_input("Harga BBM (Rp/L)", value=10000, step=50)
-Kurs_USD_IDR = st.number_input("Kurs USD/IDR", value=15000, step=10)
-Harga_Beras = st.number_input("Harga Beras (Rp/kg)", value=12000, step=50)
-Inflasi_Inti = st.number_input("Inflasi Inti (%)", value=2.5, step=0.01)
-Inflasi_Total = st.number_input("Inflasi Total (%)", value=2.7, step=0.01)
+# Container dengan border putih
+with st.container():
+    st.markdown(
+        """
+        <div style="
+            border: 2px solid white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        ">
+        <h4 style="margin-top:0; color: white;">📦 Input Data Ekonomi (Bulan Sebelumnya)</h4>
+        """,
+        unsafe_allow_html=True
+    )
 
-st.markdown("</div>", unsafe_allow_html=True)
+    # Input form
+    tahun = st.number_input("Tahun", value=datetime.now().year, min_value=2010, max_value=2030)
+    bulan = st.selectbox("Bulan", 
+                         ["Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                          "Juli", "Agustus", "September", "Oktober", "November", "Desember"], index=6)
+    BI_Rate = st.number_input("BI Rate (%)", value=6.0, step=0.01)
+    BBM = st.number_input("Harga BBM (Rp/L)", value=10000, step=50)
+    Kurs_USD_IDR = st.number_input("Kurs USD/IDR", value=15000, step=10)
+    Harga_Beras = st.number_input("Harga Beras (Rp/kg)", value=12000, step=50)
+    Inflasi_Inti = st.number_input("Inflasi Inti (%)", value=2.5, step=0.01)
+    Inflasi_Total = st.number_input("Inflasi Total (%)", value=2.7, step=0.01)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 if st.button("Prediksi Inflasi"):
