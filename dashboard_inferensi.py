@@ -11,6 +11,22 @@ with open('data/features_training.txt') as f:
 st.title("📈 Prediksi Inflasi - Dashboard Forecasting")
 
 st.markdown("""
+<style>
+.input-box {
+    border: 2px solid white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+.input-box h4 {
+    margin-top: 0;
+    color: white;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
 Masukkan data ekonomi **bulan sebelumnya** untuk memprediksi **inflasi bulan berikutnya**.
 """)
 
@@ -46,5 +62,5 @@ if st.button("Prediksi Inflasi"):
     # st.success(f"Prediksi Inflasi Total bulan depan: {prediksi:.2f}%")
     st.success(f"📌 Prediksi Inflasi untuk **{bulan} {tahun}** adalah: **{prediksi:.2f}%**")
 
-
-
+# Tutup kotak input
+st.markdown("</div>", unsafe_allow_html=True)
