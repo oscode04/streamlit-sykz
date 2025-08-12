@@ -38,6 +38,7 @@ def preprocess_and_update_histori(
     windows=[3,6,12], lags=[1,3,6,12]
 ):
     df_histori = pd.read_csv(csv_path)
+    print("Kolom awal di CSV:", df_histori.columns.tolist())  # Debug kolom awal
 
     tahun = input_user_dict['Tahun']
     bulan = input_user_dict['Bulan']
@@ -50,24 +51,20 @@ def preprocess_and_update_histori(
     df_histori = encode_bulan(df_histori)
     df_histori = df_histori.sort_values(['Tahun', 'Bulan_Num']).reset_index(drop=True)
 
-    # Step 1: Generate lag features dulu dari kolom asli (lag_columns)
     df_histori = generate_lag_features(df_histori, lag_columns, lags)
+    print("Kolom setelah generate_lag_features:", df_histori.columns.tolist())  # Debug kolom setelah lag
 
-    # Step 2: Sekarang buat rolling features dari kolom asli + kolom lag yang sudah ada
-    # Jadi buat daftar kolom untuk rolling, yaitu lag_columns + kolom lag yang baru dibuat
     rolling_columns = lag_columns.copy()
     for col in lag_columns:
         for lag in lags:
-            rolling_columns.append(f"{col}_lag{lag}")
+            col_lag = f"{col}_lag{lag}"
+            if col_lag in df_histori.columns:
+                rolling_columns.append(col_lag)
 
     df_histori = add_rolling_features(df_histori, rolling_columns, windows)
 
-    # Isi NaN dengan 0 (karena lag dan rolling di awal pasti ada NaN)
+    # Isi NaN dengan 0 agar kolom lag dan rolling tidak hilang
     df_histori = df_histori.fillna(0).reset_index(drop=True)
-
-    # Debug print kolom untuk cek
-    print("Kolom setelah feature engineering:")
-    print(df_histori.columns.tolist())
 
     df_infer = df_histori.iloc[[-1]]
     df_infer = reorder_features(df_infer, feature_list)
