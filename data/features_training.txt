@@ -36,6 +36,12 @@ Inflasi_Inti_roll_mean_6
 Inflasi_Inti_roll_std_6
 Inflasi_Inti_roll_mean_12
 Inflasi_Inti_roll_std_12
+Inflasi_Total_roll_mean_3
+Inflasi_Total_roll_std_3
+Inflasi_Total_roll_mean_6
+Inflasi_Total_roll_std_6
+Inflasi_Total_roll_mean_12
+Inflasi_Total_roll_std_12
 bulan_sin_roll_mean_3
 bulan_sin_roll_std_3
 bulan_sin_roll_mean_6
@@ -68,6 +74,10 @@ Inflasi_Inti_lag1
 Inflasi_Inti_lag3
 Inflasi_Inti_lag6
 Inflasi_Inti_lag12
+Inflasi_Total_lag1
+Inflasi_Total_lag3
+Inflasi_Total_lag6
+Inflasi_Total_lag12
 bulan_sin_lag1
 bulan_sin_lag3
 bulan_sin_lag6
