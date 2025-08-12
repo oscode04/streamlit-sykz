@@ -57,6 +57,7 @@ if st.button("Prediksi Inflasi"):
     df_infer, df_histori = preprocess_and_update_histori(csv_path, input_user, features_training)
     prediksi = predict_inflasi(model_path, df_infer, features_training)
 
-    st.success(f"Prediksi Inflasi Total bulan depan: {prediksi:.2f}%")
+    # st.success(f"Prediksi Inflasi Total bulan depan: {prediksi:.2f}%")
+    st.success(f"📌 Prediksi Inflasi untuk **{bulan} {tahun}** adalah: **{prediksi:.2f}%**")
 
 
