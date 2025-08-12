@@ -133,7 +133,7 @@
 
 import streamlit as st
 from src.preprocessing import preprocess_and_update_histori
-from src.inferensi import predict_inflasi
+from src.inference import predict_inflasi
 import pandas as pd
 from datetime import datetime
 
