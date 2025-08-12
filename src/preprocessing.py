@@ -39,27 +39,25 @@ def preprocess_and_update_histori(
     windows=[3,6,12], lags=[1,3,6,12]
 ):
     df_histori = pd.read_csv(csv_path)
+    print("Kolom asli CSV:", df_histori.columns.tolist())
 
     tahun = input_user_dict['Tahun']
     bulan = input_user_dict['Bulan']
 
-    # Update atau tambah data input_user
     idx = df_histori[(df_histori['Tahun'] == tahun) & (df_histori['Bulan'] == bulan)].index
     if len(idx) > 0:
         df_histori.loc[idx[0], list(input_user_dict.keys())] = list(input_user_dict.values())
     else:
         df_histori = pd.concat([df_histori, pd.DataFrame([input_user_dict])], ignore_index=True)
 
-    # Encode bulan dulu
     df_histori = encode_bulan(df_histori)
-
-    # Urutkan berdasarkan Tahun dan Bulan_Num
     df_histori = df_histori.sort_values(['Tahun', 'Bulan_Num']).reset_index(drop=True)
 
-    # 1. Generate lag features dulu
+    # Generate lag features
     df_histori = generate_lag_features(df_histori, lag_columns, lags)
+    print("Kolom setelah generate lag features:", df_histori.columns.tolist())
 
-    # 2. Tentukan kolom untuk rolling: lag_columns plus lag columns
+    # Tentukan kolom rolling (lag_columns + lag columns)
     rolling_cols = lag_columns.copy()
     for col in lag_columns:
         for lag in lags:
@@ -67,20 +65,21 @@ def preprocess_and_update_histori(
             if col_lag in df_histori.columns:
                 rolling_cols.append(col_lag)
 
-    # 3. Generate rolling features (mean, std)
     df_histori = add_rolling_features(df_histori, rolling_cols, windows)
+    print("Kolom setelah add rolling features:", df_histori.columns.tolist())
 
-    # 4. Isi NaN dengan 0 agar kolom lag dan rolling tetap lengkap dan tidak error
     df_histori = df_histori.fillna(0)
+    print("Ada NaN setelah fillna? ", df_histori.isna().sum().sum())
 
-    # 5. Ambil baris terakhir untuk inferensi
     df_infer = df_histori.iloc[[-1]]
 
-    # 6. Reorder fitur sesuai feature_list (tambahkan kolom kosong jika tidak ada)
     for col in feature_list:
         if col not in df_infer.columns:
+            print(f"Fitur {col} tidak ada, akan dibuat kolom nol")
             df_infer[col] = 0
+
     df_infer = df_infer[feature_list]
 
     return df_infer, df_histori
+
 
