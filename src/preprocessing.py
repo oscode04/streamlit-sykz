@@ -36,7 +36,7 @@ def ensure_all_features(df, feature_list):
 
 def preprocess_and_update_histori(
     csv_path, input_user_dict, feature_list,
-    lag_columns=['BI_Rate', 'BBM', 'Kurs_USD_IDR', 'Harga_Beras', 'Inflasi_Inti', 'Inflasi_Total'],
+    lag_columns = ['BI_Rate', 'BBM', 'Kurs_USD_IDR', 'Harga_Beras', 'Inflasi_Inti', 'Inflasi_Total', 'bulan_sin', 'bulan_cos'],
     windows=[3,6,12], lags=[1,3,6,12]
 ):
     df_histori = pd.read_csv(csv_path)
