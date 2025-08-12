@@ -26,10 +26,6 @@ def generate_lag_features(df, columns, lags=[1, 3, 6, 12]):
     return df
 
 def reorder_features(df, feature_list):
-    """
-    Reorder kolom df sesuai feature_list.
-    Jika ada kolom yang tidak ada di df, tambahkan dengan nilai 0.
-    """
     for col in feature_list:
         if col not in df.columns:
             df[col] = 0
@@ -41,10 +37,12 @@ def preprocess_and_update_histori(
     lag_columns=['BI_Rate', 'BBM', 'Kurs_USD_IDR', 'Harga_Beras', 'Inflasi_Inti', 'Inflasi_Total', 'bulan_sin', 'bulan_cos'],
     windows=[3,6,12], lags=[1,3,6,12]
 ):
-    # Load data historis
     df_histori = pd.read_csv(csv_path)
 
-    # Update atau tambah data input user ke histori
+    # Pastikan ada cukup data historis
+    if df_histori.shape[0] < max(lags) + 1:
+        raise ValueError(f"Data historis harus minimal {max(lags)+1} baris supaya lag bisa terbentuk.")
+
     tahun = input_user_dict['Tahun']
     bulan = input_user_dict['Bulan']
     idx = df_histori[(df_histori['Tahun'] == tahun) & (df_histori['Bulan'] == bulan)].index
@@ -53,25 +51,20 @@ def preprocess_and_update_histori(
     else:
         df_histori = pd.concat([df_histori, pd.DataFrame([input_user_dict])], ignore_index=True)
 
-    # Encode bulan dan buat fitur sinus & cosinus
     df_histori = encode_bulan(df_histori)
-
-    # Urutkan data berdasarkan Tahun dan Bulan_Num
     df_histori = df_histori.sort_values(['Tahun', 'Bulan_Num']).reset_index(drop=True)
 
-    # Tambah fitur rolling mean & std untuk kolom lag_columns
     df_histori = add_rolling_features(df_histori, lag_columns, windows)
-
-    # Tambah fitur lag untuk kolom lag_columns
     df_histori = generate_lag_features(df_histori, lag_columns, lags)
 
-    # Isi nilai NaN dengan 0 agar semua fitur rolling dan lag tetap ada
+    # Jangan dropna, tapi isi nan dengan 0 agar lag dan rolling tetap ada
     df_histori = df_histori.fillna(0).reset_index(drop=True)
 
-    # Ambil data baris terakhir untuk inferensi
-    df_infer = df_histori.iloc[[-1]]
+    # Debug print kolom yang ada setelah feature engineering
+    print("Kolom-kolom setelah fitur dibuat:")
+    print(df_histori.columns.tolist())
 
-    # Reorder kolom agar sesuai dengan fitur yang dipakai model
+    df_infer = df_histori.iloc[[-1]]
     df_infer = reorder_features(df_infer, feature_list)
 
     return df_infer, df_histori
