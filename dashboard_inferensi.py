@@ -10,10 +10,6 @@ with open('data/features_training.txt') as f:
 
 st.title("📈 Prediksi Inflasi - Dashboard Forecasting")
 
-st.markdown("""
-Masukkan data ekonomi **bulan sebelumnya** untuk memprediksi **inflasi bulan berikutnya**.
-""")
-
 # # ===== Dropdown untuk memilih bulan dan tahun =====
 # st.subheader("📆 Pilih Bulan & Tahun Prediksi")
 
@@ -23,6 +19,10 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+st.markdown("""
+Masukkan data ekonomi **bulan sebelumnya** untuk memprediksi **inflasi bulan berikutnya**.
+""")
 
 # Input user
 tahun = st.number_input("Tahun", value=datetime.now().year, min_value=2010, max_value=2030)
