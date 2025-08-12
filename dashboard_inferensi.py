@@ -33,7 +33,8 @@ st.markdown("#### 📦 Input Data Ekonomi (Bulan Sebelumnya)", unsafe_allow_html
 st.markdown("""
 Masukkan data ekonomi **bulan sebelumnya** untuk memprediksi **inflasi bulan berikutnya**.
 """)
-
+# Tutup kotak input
+st.markdown("</div>", unsafe_allow_html=True)
 # Input user
 tahun = st.number_input("Tahun", value=datetime.now().year, min_value=2010, max_value=2030)
 bulan = st.selectbox("Bulan", 
@@ -66,5 +67,3 @@ if st.button("Prediksi Inflasi"):
     # st.success(f"Prediksi Inflasi Total bulan depan: {prediksi:.2f}%")
     st.success(f"📌 Prediksi Inflasi untuk **{bulan} {tahun}** adalah: **{prediksi:.2f}%**")
 
-# Tutup kotak input
-st.markdown("</div>", unsafe_allow_html=True)
