@@ -25,11 +25,12 @@ def add_rolling_features(df, columns, windows=[3, 6, 12]):
             df[f'{col}_roll_std_{win}'] = df[col].rolling(window=win).std()
     return df
 
-def reorder_features(df, feature_list):
-    # Pastikan semua fitur ada di df, jika belum ada tambahkan kolom 0
+def ensure_all_features(df, feature_list):
+    # Pastikan semua fitur ada, jika belum ada tambahkan kolom 0
     for col in feature_list:
         if col not in df.columns:
             df[col] = 0
+    # Urutkan kolom sesuai feature_list
     df = df[feature_list]
     return df
 
@@ -42,6 +43,8 @@ def preprocess_and_update_histori(
     
     tahun = input_user_dict['Tahun']
     bulan = input_user_dict['Bulan']
+    
+    # Update data atau tambah baris baru
     idx = df_histori[(df_histori['Tahun'] == tahun) & (df_histori['Bulan'] == bulan)].index
     if len(idx) > 0:
         df_histori.loc[idx[0], list(input_user_dict.keys())] = list(input_user_dict.values())
@@ -50,25 +53,28 @@ def preprocess_and_update_histori(
     
     df_histori = encode_bulan(df_histori)
     df_histori = df_histori.sort_values(['Tahun', 'Bulan_Num']).reset_index(drop=True)
-
-    df_histori = generate_lag_features(df_histori, lag_columns + ['bulan_sin', 'bulan_cos'], lags)
-    print("Kolom setelah generate lag features:", df_histori.columns.tolist())
-
-    rolling_cols = lag_columns + ['bulan_sin', 'bulan_cos']
-    for col in lag_columns + ['bulan_sin', 'bulan_cos']:
+    
+    # Generate lag features, termasuk bulan_sin & bulan_cos
+    all_lag_cols = lag_columns + ['bulan_sin', 'bulan_cos']
+    df_histori = generate_lag_features(df_histori, all_lag_cols, lags)
+    
+    # Tentukan kolom rolling termasuk lag features yang baru dibuat
+    rolling_cols = all_lag_cols.copy()
+    for col in all_lag_cols:
         for lag in lags:
             col_lag = f"{col}_lag{lag}"
             if col_lag in df_histori.columns:
                 rolling_cols.append(col_lag)
-
+    
     df_histori = add_rolling_features(df_histori, rolling_cols, windows)
-    print("Kolom setelah add rolling features:", df_histori.columns.tolist())
-
+    
+    # Isi NaN dengan 0 supaya tidak error waktu inferensi
     df_histori = df_histori.fillna(0)
-
+    
+    # Ambil baris terakhir untuk inferensi
     df_infer = df_histori.iloc[[-1]]
-
-    df_infer = reorder_features(df_infer, feature_list)
-
+    
+    # Pastikan kolom sesuai feature_list dan urut
+    df_infer = ensure_all_features(df_infer, feature_list)
+    
     return df_infer, df_histori
-

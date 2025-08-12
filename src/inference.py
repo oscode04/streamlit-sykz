@@ -1,17 +1,17 @@
 from xgboost import Booster, DMatrix
 
-def predict_inflasi(model_path, df_features, model_feature_cols):
+def predict_inflasi(model_path, df_features, feature_list):
     """
     model_path: path ke file model .model hasil save XGBoost
     df_features: DataFrame 1 baris fitur lengkap hasil preprocessing siap inferensi
-    model_feature_cols: list nama kolom fitur lengkap yang dipakai saat training (urutan harus sama)
+    feature_list: list nama kolom fitur lengkap yang dipakai saat training (urutan harus sama)
     """
     model = Booster()
     model.load_model(model_path)
     
-    # Ambil hanya fitur yang diperlukan sesuai urutan training
+    # Pastikan kolom fitur lengkap dan urut
     X = df_features.copy()
-    X = X[model_feature_cols]
+    X = X[feature_list]
     
     dmatrix = DMatrix(X)
     preds = model.predict(dmatrix)
