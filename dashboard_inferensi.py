@@ -25,10 +25,10 @@ st.markdown(
 )
 
 # Input user
-tahun = st.number_input("Tahun", value=datetime.now().year, min_value=2000, max_value=2030)
+tahun = st.number_input("Tahun", value=datetime.now().year, min_value=2010, max_value=2030)
 bulan = st.selectbox("Bulan", 
                      ["Januari", "Februari", "Maret", "April", "Mei", "Juni",
-                      "Juli", "Agustus", "September", "Oktober", "November", "Desember"], index=7)
+                      "Juli", "Agustus", "September", "Oktober", "November", "Desember"], index=6)
 BI_Rate = st.number_input("BI Rate (%)", value=6.0, step=0.01)
 BBM = st.number_input("Harga BBM (Rp/L)", value=10000, step=50)
 Kurs_USD_IDR = st.number_input("Kurs USD/IDR", value=15000, step=10)
@@ -56,4 +56,5 @@ if st.button("Prediksi Inflasi"):
     # st.success(f"Prediksi Inflasi Total bulan depan: {prediksi:.2f}%")
     st.success(f"📌 Prediksi Inflasi untuk **{bulan} {tahun}** adalah: **{prediksi:.2f}%**")
 
+st.markdown("</div>", unsafe_allow_html=True)
 
