@@ -57,10 +57,18 @@ def preprocess_and_update_histori(
 def predict_inflasi(model_path, df_features):
     model = Booster()
     model.load_model(model_path)
-    if 'Inflasi_Total' in df_features.columns:
-        X = df_features.drop(columns=['Inflasi_Total'])
-    else:
-        X = df_features.copy()
+
+    X = df_features.copy()
+    # Drop kolom target dan kolom 'Bulan' yg non-numerik
+    drop_cols = []
+    if 'Inflasi_Total' in X.columns:
+        drop_cols.append('Inflasi_Total')
+    if 'Bulan' in X.columns:
+        drop_cols.append('Bulan')
+
+    if drop_cols:
+        X = X.drop(columns=drop_cols)
+
     dmatrix = DMatrix(X)
     preds = model.predict(dmatrix)
     return preds[0]
