@@ -38,10 +38,11 @@ def preprocess_and_update_histori(
     windows=[3,6,12], lags=[1,3,6,12]
 ):
     df_histori = pd.read_csv(csv_path)
-    print("Kolom awal di CSV:", df_histori.columns.tolist())  # Debug kolom awal
 
     tahun = input_user_dict['Tahun']
     bulan = input_user_dict['Bulan']
+
+    # Update atau tambah data input_user
     idx = df_histori[(df_histori['Tahun'] == tahun) & (df_histori['Bulan'] == bulan)].index
     if len(idx) > 0:
         df_histori.loc[idx[0], list(input_user_dict.keys())] = list(input_user_dict.values())
@@ -51,22 +52,28 @@ def preprocess_and_update_histori(
     df_histori = encode_bulan(df_histori)
     df_histori = df_histori.sort_values(['Tahun', 'Bulan_Num']).reset_index(drop=True)
 
+    # Buat fitur lag terlebih dahulu
     df_histori = generate_lag_features(df_histori, lag_columns, lags)
-    print("Kolom setelah generate_lag_features:", df_histori.columns.tolist())  # Debug kolom setelah lag
 
-    rolling_columns = lag_columns.copy()
+    # Buat list kolom rolling yang terdiri dari lag_columns dan lag_columns_lagX
+    rolling_cols = lag_columns.copy()
     for col in lag_columns:
         for lag in lags:
             col_lag = f"{col}_lag{lag}"
             if col_lag in df_histori.columns:
-                rolling_columns.append(col_lag)
+                rolling_cols.append(col_lag)
 
-    df_histori = add_rolling_features(df_histori, rolling_columns, windows)
+    # Buat fitur rolling (mean dan std) untuk kolom-kolom di rolling_cols
+    df_histori = add_rolling_features(df_histori, rolling_cols, windows)
 
-    # Isi NaN dengan 0 agar kolom lag dan rolling tidak hilang
+    # Isi NaN dengan 0 agar kolom lag/rolling tidak hilang karena dropna
     df_histori = df_histori.fillna(0).reset_index(drop=True)
 
+    # Ambil baris terakhir untuk inferensi
     df_infer = df_histori.iloc[[-1]]
+
+    # Reorder kolom sesuai feature_list, tambahkan kolom kosong jika perlu
     df_infer = reorder_features(df_infer, feature_list)
 
     return df_infer, df_histori
+
