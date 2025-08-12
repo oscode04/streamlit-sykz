@@ -8,7 +8,7 @@ from datetime import datetime
 with open('data/features_training.txt') as f:
     features_training = [line.strip() for line in f.readlines()]
 
-st.title("📈 Prediksi Inflasi - Dashboard Forecasting")
+st.title("📈 Dashboard Prediksi Inflasi Indonesia")
 
 st.markdown("""
 📦 Masukkan data ekonomi **bulan sebelumnya** untuk memprediksi **inflasi bulan berikutnya**.
