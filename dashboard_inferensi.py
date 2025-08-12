@@ -14,14 +14,21 @@ st.markdown("""
 Masukkan data ekonomi **bulan sebelumnya** untuk memprediksi **inflasi bulan berikutnya**.
 """)
 
-# ===== Dropdown untuk memilih bulan dan tahun =====
-st.subheader("📆 Pilih Bulan & Tahun Prediksi")
+# # ===== Dropdown untuk memilih bulan dan tahun =====
+# st.subheader("📆 Pilih Bulan & Tahun Prediksi")
+
+st.markdown(
+    """
+    <div style="border: 2px solid #ddd; padding: 10px; border-radius: 8px;">
+    """,
+    unsafe_allow_html=True
+)
 
 # Input user
-tahun = st.number_input("Tahun", value=datetime.now().year, min_value=2000, max_value=2100)
+tahun = st.number_input("Tahun", value=datetime.now().year, min_value=2000, max_value=2030)
 bulan = st.selectbox("Bulan", 
                      ["Januari", "Februari", "Maret", "April", "Mei", "Juni",
-                      "Juli", "Agustus", "September", "Oktober", "November", "Desember"], index=6)
+                      "Juli", "Agustus", "September", "Oktober", "November", "Desember"], index=7)
 BI_Rate = st.number_input("BI Rate (%)", value=6.0, step=0.01)
 BBM = st.number_input("Harga BBM (Rp/L)", value=10000, step=50)
 Kurs_USD_IDR = st.number_input("Kurs USD/IDR", value=15000, step=10)
