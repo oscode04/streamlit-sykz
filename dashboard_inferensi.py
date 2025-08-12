@@ -59,19 +59,17 @@ def predict_inflasi(model_path, df_features):
     model.load_model(model_path)
 
     X = df_features.copy()
-    # Drop kolom target dan kolom 'Bulan' yg non-numerik
-    drop_cols = []
-    if 'Inflasi_Total' in X.columns:
-        drop_cols.append('Inflasi_Total')
-    if 'Bulan' in X.columns:
-        drop_cols.append('Bulan')
 
-    if drop_cols:
-        X = X.drop(columns=drop_cols)
+    # Drop kolom target dan kolom yang tidak numerik agar fitur hanya sesuai saat training
+    drop_cols = ['Inflasi_Total', 'Bulan', 'Bulan_Num']
+    for col in drop_cols:
+        if col in X.columns:
+            X = X.drop(columns=[col])
 
     dmatrix = DMatrix(X)
     preds = model.predict(dmatrix)
     return preds[0]
+
 
 # ==============================
 # Streamlit UI dan Logika
